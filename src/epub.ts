@@ -118,7 +118,7 @@ export async function parseEpub(ab: ArrayBuffer) {
   const metaCover = metadataEl?.querySelector('meta[name="cover"]')
   const coverId = metaCover?.getAttribute('content') || ''
   if (coverId) {
-    const coverItem = manifestEl?.querySelector(`item[id="${coverId}"]`) as Element | null
+    const coverItem = manifestEl?.querySelector(`item[id="${coverId}"]`)
     if (coverItem) {
       const href = coverItem.getAttribute('href') || ''
       const mime = coverItem.getAttribute('media-type') || ''

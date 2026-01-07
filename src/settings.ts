@@ -164,7 +164,7 @@ export class BookMetaSettingTab extends PluginSettingTab {
       .setDesc(tr(this.plugin, 'input_desc'))
       .addText((text) =>
         text
-          .setPlaceholder('Books/EPUB')
+          .setPlaceholder('Books/epub')
           .setValue(this.plugin.settings.inputFolder)
           .onChange((value) => {
             this.plugin.settings.inputFolder = value.trim()
@@ -191,7 +191,7 @@ export class BookMetaSettingTab extends PluginSettingTab {
       .setDesc(tr(this.plugin, 'meta_desc'))
       .addText((text) =>
         text
-          .setPlaceholder('Books/Meta')
+          .setPlaceholder('Books/meta')
           .setValue(this.plugin.settings.metadataFolder)
           .onChange((value) => {
             this.plugin.settings.metadataFolder = value.trim()
@@ -245,7 +245,7 @@ export class BookMetaSettingTab extends PluginSettingTab {
       .setDesc(tr(this.plugin, 'out_desc'))
       .addText((text) =>
         text
-          .setPlaceholder('Books/Notes')
+          .setPlaceholder('Books/notes')
           .setValue(this.plugin.settings.outputFolder)
           .onChange((value) => {
             this.plugin.settings.outputFolder = value.trim()
