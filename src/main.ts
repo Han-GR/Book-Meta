@@ -63,11 +63,12 @@ async function ensureFolder(app: App, path: string) {
   }
 }
 
-async function listEpubs(folder: TFolder) {
+function listEpubs(folder: TFolder) {
   const out: TFile[] = []
   const stack: TFolder[] = [folder]
   while (stack.length) {
-    const f = stack.pop()!
+    const f = stack.pop()
+    if (!f) break
     for (const c of f.children) {
       if (c instanceof TFolder) stack.push(c)
       else if (c instanceof TFile && c.extension.toLowerCase() === 'epub') out.push(c)
@@ -82,10 +83,10 @@ export default class BookMetaPlugin extends Plugin {
     this.settings = Object.assign({}, DEFAULT_SETTINGS)
     await this.loadSettings()
     this.addCommand({
-      id: 'book-meta-go',
-      name: 'book meta go',
-      callback: async () => {
-        await this.run()
+      id: 'generate-metadata',
+      name: 'Generate metadata',
+      callback: () => {
+        void this.run()
       },
     })
     this.addSettingTab(new BookMetaSettingTab(this.app, this))
@@ -105,7 +106,7 @@ export default class BookMetaPlugin extends Plugin {
     await ensureFolder(this.app, s.outputFolder)
     const tplFile = s.templatePath ? this.app.vault.getAbstractFileByPath(s.templatePath) : null
     const tpl = tplFile instanceof TFile ? await this.app.vault.read(tplFile) : ''
-    const epubs = await listEpubs(input)
+    const epubs = listEpubs(input)
     let ok = 0
     let list_len = epubs.length
     for (const f of epubs) {

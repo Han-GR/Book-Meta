@@ -1,4 +1,5 @@
 import { App, PluginSettingTab, Setting, FuzzySuggestModal, TFolder, TFile } from 'obsidian'
+import type BookMetaPlugin from './main'
 
 export interface BookMetaSettings {
   inputFolder: string
@@ -45,19 +46,19 @@ const STRINGS: Record<string, Record<string, string>> = {
     notice_done: '处理完成',
   },
   en: {
-    input_name: 'Input Folder',
+    input_name: 'Input folder',
     input_desc: 'Path relative to vault, scan EPUB files inside',
     input_desc_ok: 'Path valid, EPUB files can be read',
     input_desc_bad: 'Path not found, please choose or create folder',
-    meta_name: 'Metadata Folder',
+    meta_name: 'Metadata folder',
     meta_desc: 'Store parsed JSON and cover images',
     meta_desc_ok: 'Path valid, JSON and covers will be generated',
     meta_desc_bad: 'Path not found, folder will be auto created',
-    tpl_name: 'Template File',
+    tpl_name: 'Template file',
     tpl_desc: 'Template used to generate notes',
     tpl_desc_ok: 'Template found, will be used',
     tpl_desc_bad: 'Template not found, using default',
-    out_name: 'Output Folder',
+    out_name: 'Output folder',
     out_desc: 'Generated notes will be saved here',
     out_desc_ok: 'Path valid, notes will be generated inside',
     out_desc_bad: 'Path not found, folder will be auto created',
@@ -73,14 +74,14 @@ const STRINGS: Record<string, Record<string, string>> = {
   },
 }
 
-export function tr(plugin: any, key: string) {
+export function tr(plugin: BookMetaPlugin, key: string) {
   const lang = plugin.settings?.language || 'zh'
   return STRINGS[lang]?.[key] || STRINGS['zh'][key] || key
 }
 
 export class BookMetaSettingTab extends PluginSettingTab {
-  plugin: any
-  constructor(app: App, plugin: any) {
+  plugin: BookMetaPlugin
+  constructor(app: App, plugin: BookMetaPlugin) {
     super(app, plugin)
     this.plugin = plugin
   }
@@ -88,7 +89,8 @@ export class BookMetaSettingTab extends PluginSettingTab {
     const out: TFolder[] = []
     const stack: TFolder[] = [root]
     while (stack.length) {
-      const f = stack.pop()!
+      const f = stack.pop()
+      if (!f) break
       out.push(f)
       for (const c of f.children) if (c instanceof TFolder) stack.push(c)
     }
@@ -99,7 +101,8 @@ export class BookMetaSettingTab extends PluginSettingTab {
     const stack: TFolder[] = [root]
     const set = exts && exts.length ? new Set(exts.map((e) => e.toLowerCase())) : null
     while (stack.length) {
-      const f = stack.pop()!
+      const f = stack.pop()
+      if (!f) break
       for (const c of f.children) {
         if (c instanceof TFolder) stack.push(c)
         else if (c instanceof TFile) {
@@ -163,9 +166,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
         text
           .setPlaceholder('Books/EPUB')
           .setValue(this.plugin.settings.inputFolder)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.inputFolder = value.trim()
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok =
               this.app.vault.getAbstractFileByPath(this.plugin.settings.inputFolder) instanceof
               TFolder
@@ -174,9 +177,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
       )
       .addButton((btn) =>
         btn.setButtonText(tr(this.plugin, 'choose')).onClick(() => {
-          this.openFolderSuggest(async (path) => {
+          this.openFolderSuggest((path) => {
             this.plugin.settings.inputFolder = path
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok = this.app.vault.getAbstractFileByPath(path) instanceof TFolder
             s1.setDesc(ok ? tr(this.plugin, 'input_desc_ok') : tr(this.plugin, 'input_desc_bad'))
             this.display()
@@ -190,9 +193,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
         text
           .setPlaceholder('Books/Meta')
           .setValue(this.plugin.settings.metadataFolder)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.metadataFolder = value.trim()
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok =
               this.app.vault.getAbstractFileByPath(this.plugin.settings.metadataFolder) instanceof
               TFolder
@@ -201,9 +204,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
       )
       .addButton((btn) =>
         btn.setButtonText(tr(this.plugin, 'choose')).onClick(() => {
-          this.openFolderSuggest(async (path) => {
+          this.openFolderSuggest((path) => {
             this.plugin.settings.metadataFolder = path
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok = this.app.vault.getAbstractFileByPath(path) instanceof TFolder
             s2.setDesc(ok ? tr(this.plugin, 'meta_desc_ok') : tr(this.plugin, 'meta_desc_bad'))
             this.display()
@@ -217,9 +220,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
         text
           .setPlaceholder('Templates/book.md')
           .setValue(this.plugin.settings.templatePath)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.templatePath = value.trim()
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok =
               this.app.vault.getAbstractFileByPath(this.plugin.settings.templatePath) instanceof
               TFile
@@ -228,9 +231,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
       )
       .addButton((btn) =>
         btn.setButtonText(tr(this.plugin, 'choose')).onClick(() => {
-          this.openFileSuggest(['md'], async (path) => {
+          this.openFileSuggest(['md'], (path) => {
             this.plugin.settings.templatePath = path
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok = this.app.vault.getAbstractFileByPath(path) instanceof TFile
             s3.setDesc(ok ? tr(this.plugin, 'tpl_desc_ok') : tr(this.plugin, 'tpl_desc_bad'))
             this.display()
@@ -244,9 +247,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
         text
           .setPlaceholder('Books/Notes')
           .setValue(this.plugin.settings.outputFolder)
-          .onChange(async (value) => {
+          .onChange((value) => {
             this.plugin.settings.outputFolder = value.trim()
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok =
               this.app.vault.getAbstractFileByPath(this.plugin.settings.outputFolder) instanceof
               TFolder
@@ -255,9 +258,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
       )
       .addButton((btn) =>
         btn.setButtonText(tr(this.plugin, 'choose')).onClick(() => {
-          this.openFolderSuggest(async (path) => {
+          this.openFolderSuggest((path) => {
             this.plugin.settings.outputFolder = path
-            await this.plugin.saveSettings()
+            void this.plugin.saveSettings()
             const ok = this.app.vault.getAbstractFileByPath(path) instanceof TFolder
             s4.setDesc(ok ? tr(this.plugin, 'out_desc_ok') : tr(this.plugin, 'out_desc_bad'))
             this.display()
@@ -271,9 +274,9 @@ export class BookMetaSettingTab extends PluginSettingTab {
         dd.addOption('zh', tr(this.plugin, 'lang_zh'))
         dd.addOption('en', tr(this.plugin, 'lang_en'))
         dd.setValue(this.plugin.settings.language || 'zh')
-        dd.onChange(async (v) => {
-          this.plugin.settings.language = v as any
-          await this.plugin.saveSettings()
+        dd.onChange((v) => {
+          this.plugin.settings.language = v as BookMetaSettings['language']
+          void this.plugin.saveSettings()
           this.display()
         })
       })
