@@ -3,7 +3,7 @@
   "name": "Book Meta",
   "version": "1.0.0",
   "minAppVersion": "1.6.0",
-  "description": "A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate notes.",
+  "description": "Batch parse EPUB metadata, save covers, and generate notes.",
   "author": "Han-GR",
   "authorUrl": "https://github.com/Han-GR",
   "fundingUrl": "https://han-gr.github.io/pages/about.html",
