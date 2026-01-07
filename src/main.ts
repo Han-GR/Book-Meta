@@ -1,99 +1,167 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin} from 'obsidian';
-import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
+import { App, Notice, Plugin, TFile, TFolder } from 'obsidian'
+import { DEFAULT_SETTINGS, BookMetaSettingTab, BookMetaSettings, tr } from './settings'
+import { parseEpub, BookMeta } from './epub'
+import { applyTemplate } from './template'
 
-// Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
-	settings: MyPluginSettings;
-
-	async onload() {
-		await this.loadSettings();
-
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
-
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			}
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (editor: Editor, view: MarkdownView) => {
-				editor.replaceSelection('Sample editor command');
-			}
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-				return false;
-			}
-		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			new Notice("Click");
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
-
-	}
-
-	onunload() {
-	}
-
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MyPluginSettings>);
-	}
-
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+function slug(s: string) {
+  return s
+    .replace(/[\\/:*?"<>|]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
-class SampleModal extends Modal {
-	constructor(app: App) {
-		super(app);
-	}
+function join(arr?: string[]) {
+  return arr && arr.length ? arr.join(',') : ''
+}
 
-	onOpen() {
-		let {contentEl} = this;
-		contentEl.setText('Woah!');
-	}
+function buildTemplateData(meta: BookMeta, coverPath: string) {
+  const dates = (meta.dates || [])
+    .map((d) => (d.event ? `${d.event}:${d.value}` : d.value))
+    .filter(Boolean)
+  const identifiers = (meta.identifiers || [])
+    .map((i) => `${i.scheme || ''}:${i.value}`)
+    .filter(Boolean)
+  const out: Record<string, string> = {
+    title: meta.title || '',
+    author: meta.author || '',
+    authors: join(meta.authors),
+    publisher: meta.publisher || '',
+    isbn: meta.isbn || '',
+    description: meta.description || '',
+    subjects: join(meta.subjects),
+    languages: join(meta.languages),
+    contributors: join(meta.contributors),
+    rights: meta.rights || '',
+    sources: join(meta.sources),
+    relations: join(meta.relations),
+    coverage: meta.coverage || '',
+    type: meta.type || '',
+    format: meta.format || '',
+    dates: join(dates),
+    identifiers: join(identifiers),
+    coverPath: coverPath || '',
+    identifiers_json: JSON.stringify(meta.identifiers || []),
+    meta_json: JSON.stringify(meta.meta || []),
+    manifest_json: JSON.stringify(meta.manifest || []),
+    spine_json: JSON.stringify(meta.spine || []),
+    tocNav_json: JSON.stringify(meta.tocNav || []),
+    tocNcx_json: JSON.stringify(meta.tocNcx || []),
+  }
+  const prefixed: Record<string, string> = {}
+  for (const k in out) prefixed[`bookmeta.${k}`] = out[k]
+  return prefixed
+}
 
-	onClose() {
-		const {contentEl} = this;
-		contentEl.empty();
-	}
+async function ensureFolder(app: App, path: string) {
+  if (!path) return
+  const parts = path.split('/').filter(Boolean)
+  let curr = ''
+  for (const p of parts) {
+    curr = curr ? `${curr}/${p}` : p
+    const f = app.vault.getAbstractFileByPath(curr)
+    if (!f) await app.vault.createFolder(curr)
+  }
+}
+
+async function listEpubs(folder: TFolder) {
+  const out: TFile[] = []
+  const stack: TFolder[] = [folder]
+  while (stack.length) {
+    const f = stack.pop()!
+    for (const c of f.children) {
+      if (c instanceof TFolder) stack.push(c)
+      else if (c instanceof TFile && c.extension.toLowerCase() === 'epub') out.push(c)
+    }
+  }
+  return out
+}
+
+export default class BookMetaPlugin extends Plugin {
+  settings!: BookMetaSettings
+  async onload() {
+    this.settings = Object.assign({}, DEFAULT_SETTINGS)
+    await this.loadSettings()
+    this.addCommand({
+      id: 'book-meta-go',
+      name: 'book meta go',
+      callback: async () => {
+        await this.run()
+      },
+    })
+    this.addSettingTab(new BookMetaSettingTab(this.app, this))
+  }
+  async run() {
+    const s = this.settings
+    if (!s.inputFolder) {
+      new Notice(tr(this, 'notice_set_input'))
+      return
+    }
+    const input = this.app.vault.getAbstractFileByPath(s.inputFolder)
+    if (!(input instanceof TFolder)) {
+      new Notice(tr(this, 'notice_invalid_folder'))
+      return
+    }
+    await ensureFolder(this.app, s.metadataFolder)
+    await ensureFolder(this.app, s.outputFolder)
+    const tplFile = s.templatePath ? this.app.vault.getAbstractFileByPath(s.templatePath) : null
+    const tpl = tplFile instanceof TFile ? await this.app.vault.read(tplFile) : ''
+    const epubs = await listEpubs(input)
+    let ok = 0
+    let list_len = epubs.length
+    for (const f of epubs) {
+      try {
+        const ab = await this.app.vault.readBinary(f)
+        const meta = await parseEpub(ab)
+        const baseName = slug(f.basename)
+        const coverPath = await this.saveCover(meta, baseName)
+        const jsonDir = s.metadataFolder ? `${s.metadataFolder}/datas` : `datas`
+        await ensureFolder(this.app, jsonDir)
+        const jsonPath = `${jsonDir}/${baseName}.json`
+        await this.app.vault.create(
+          jsonPath,
+          JSON.stringify(
+            {
+              ...meta,
+              coverPath,
+            },
+            null,
+            2
+          )
+        )
+        const noteName = `${baseName}.md`
+        const outPath = s.outputFolder ? `${s.outputFolder}/${noteName}` : noteName
+        const content = applyTemplate(
+          tpl ||
+            '{{bookmeta.title}}\n{{bookmeta.authors}}\n{{bookmeta.publisher}}\n{{bookmeta.isbn}}\n{{bookmeta.coverPath}}',
+          buildTemplateData(meta, coverPath || '')
+        )
+        await this.app.vault.create(outPath, content)
+        ok++
+      } catch (e) {
+        if (e instanceof Error && e.message.includes('File already exists')) list_len--
+        continue
+        new Notice(`${tr(this, 'notice_failed')}${f.path}`)
+      }
+    }
+    new Notice(`${tr(this, 'notice_done')} ${ok}/${list_len}`)
+  }
+  async saveSettings() {
+    await this.saveData(this.settings)
+  }
+  async loadSettings() {
+    const data = await this.loadData()
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data || {})
+  }
+  async saveCover(meta: BookMeta, baseName: string) {
+    const s = this.settings
+    if (!meta.cover || !meta.cover.data) return ''
+    const ext = meta.cover.mime.includes('png') ? 'png' : 'jpg'
+    const coverRel = `covers/${baseName}.${ext}`
+    const dir = s.metadataFolder || ''
+    const full = dir ? `${dir}/${coverRel}` : coverRel
+    const parent = full.split('/').slice(0, -1).join('/')
+    await ensureFolder(this.app, parent)
+    await this.app.vault.createBinary(full, meta.cover.data)
+    return full
+  }
 }

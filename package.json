@@ -1,29 +1,21 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
-	"main": "main.js",
-	"type": "module",
-	"scripts": {
-		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint ."
-	},
-	"keywords": [],
-	"license": "0-BSD",
-	"devDependencies": {
-		"@types/node": "^16.11.6",
-		"esbuild": "0.25.5",
-		"eslint-plugin-obsidianmd": "0.1.9",
-		"globals": "14.0.0",
-		"tslib": "2.4.0",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "8.35.1",
-		"@eslint/js": "9.30.1",
-		"jiti": "2.6.1"
-	},
-	"dependencies": {
-		"obsidian": "latest"
-	}
+  "name": "obsidian-book-meta",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "dev": "node esbuild.config.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier -w \"src/**/*.ts\" \"*.json\" \"*.mjs\""
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.5",
+    "typescript": "^5.8.3",
+    "obsidian": "^1.6.0",
+    "@types/node": "^20.11.0",
+    "prettier": "^3.1.0"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
 }
