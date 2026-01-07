@@ -1,7 +1,7 @@
 {
   "id": "book-meta",
   "name": "Book Meta",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "minAppVersion": "1.6.0",
   "description": "A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate notes.",
   "author": "Han-GR",
