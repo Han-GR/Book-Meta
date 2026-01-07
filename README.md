@@ -81,7 +81,7 @@ A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate no
 - Format: `npm run format`
 
 **Donation**
-- WeChat / Alipay: contact or share donation screenshot in Issues
+- [https://han-gr.github.io/pages/about.html](https://han-gr.github.io/pages/about.html)
 
 ---
 
@@ -162,6 +162,6 @@ A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate no
 - 代码格式化：`npm run format`
 
 **捐赠**
-- 微信 / 支付宝：可在 Issue 中联系或提交捐赠截图
+- [https://han-gr.github.io/pages/about.html](https://han-gr.github.io/pages/about.html)
 
 感谢支持与使用！
