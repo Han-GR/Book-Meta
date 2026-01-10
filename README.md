@@ -60,11 +60,6 @@ A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate no
   - `{{bookmeta.tocNav_json}}`: TOC from `nav.xhtml` (modern EPUB)
   - `{{bookmeta.tocNcx_json}}`: TOC from `toc.ncx` (legacy/compat)
 
-- Folder info
-  - `{{bookmeta.folderTitle}}`: optional folder title set in settings (for library name in templates)
-  - `{{bookmeta.folderPath}}`: relative path of the folder containing current EPUB
-  - `{{bookmeta.folderName}}`: folder name containing current EPUB
-
 **Generated structure**
 - Cover: `<metadataFolder>/covers/<filename>.<png|jpg>`
 - Metadata JSON: `<metadataFolder>/datas/<filename>.json`
@@ -72,7 +67,7 @@ A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate no
 
 **Usage**
 - Configure folders and template in settings
-- Run command `book meta go`
+- Run command `Generate metadata`
 - Check notes in output folder and JSON/covers in metadata folder
 
 **Development**
@@ -141,11 +136,6 @@ A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate no
   - `{{bookmeta.tocNav_json}}`：从 `nav.xhtml` 提取的目录 JSON（现代 EPUB 目录）
   - `{{bookmeta.tocNcx_json}}`：从 `toc.ncx` 提取的目录 JSON（旧版/兼容目录）
 
-- 文件夹信息
-  - `{{bookmeta.folderTitle}}`：设置中的“文件夹标题”（可为空；用于在模板中展示书库名称）
-  - `{{bookmeta.folderPath}}`：当前 EPUB 所在的相对文件夹路径
-  - `{{bookmeta.folderName}}`：当前 EPUB 所在文件夹名
-
 **生成文件结构**
 - 封面：`<metadataFolder>/covers/<文件名>.<png|jpg>`
 - 元数据 JSON：`<metadataFolder>/datas/<文件名>.json`
@@ -153,7 +143,7 @@ A plugin for Obsidian to batch parse EPUB metadata, save covers, and generate no
 
 **使用步骤**
 - 在设置中配置各文件夹与模板路径
-- 在命令面板运行 `book meta go`
+- 在命令面板运行 `Generate metadata`
 - 查看输出文件夹中的笔记与元数据文件夹中的 JSON/封面
 
 **开发与构建**
